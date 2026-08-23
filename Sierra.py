@@ -19,7 +19,7 @@ tg_api = config["tg_api"]
 id_chat = config["id_chat"]
 openrouter = config["openrouter"]
 
-limit_tokens_swith = True
+limit_tokens_switch = True
 iterations_switch = False
 long_request = False
 
@@ -27,11 +27,11 @@ bot = telebot.TeleBot(tg_api)
 openrouter_client = OpenRouter(api_key=openrouter)
 
 
-# Ответ дикпик
+# Ответ deepseek
 async def deepseek_work(input_text_deepseek):
     try:
 # Модуль ограничения токенов
-        if limit_tokens_swith == True:
+        if limit_tokens_switch == True:
             lim_tok = 6000
         else:
             lim_tok = None
@@ -62,7 +62,7 @@ async def deepseek_work(input_text_deepseek):
 async def gpt_work (input_text_gpt):
     try:
 # Модуль ограничения токенов
-        if limit_tokens_swith == True:
+        if limit_tokens_switch == True:
             lim_tok = 6000
         else:
             lim_tok = None
@@ -280,10 +280,10 @@ def iterations():
         return "Итерации OFF"
 
 def token_switch():
-    global limit_tokens_swith
-    limit_tokens_swith = not limit_tokens_swith
+    global limit_tokens_switch
+    limit_tokens_switch = not limit_tokens_switch
     
-    if limit_tokens_swith:
+    if limit_tokens_switch:
         print("Ограничение токенов ON")
         return "Ограничение токенов ON"
     else:
@@ -304,7 +304,7 @@ def length_answer():
 def info():
     text = (
         f"\n🥵Итерации - {iterations_switch}"
-        f"\n🔥Ограничение токенов - {limit_tokens_swith}"
+        f"\n🔥Ограничение токенов - {limit_tokens_switch}"
         f"\n📖Длинный ответ - {long_request} - Функция в beta версии!"
         "\n-------------------"
         "\n--🥵Итерации это режим при котором Сиера делает 3 круга. Увеличивает охват на n%"
