@@ -1,0 +1,6 @@
+{
+    "api_gemini": "YOUR_GEMINI_API_KEY",
+    "tg_api": "YOUR_TELEGRAM_BOT_TOKEN",
+    "openrouter": "YOUR_OPENROUTER_API_KEY",
+    "id_chat": YOUR_CHAT_ID
+}
