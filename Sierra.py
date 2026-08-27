@@ -19,9 +19,24 @@ tg_api = config["tg_api"]
 id_chat = config["id_chat"]
 openrouter = config["openrouter"]
 
-limit_tokens_switch = True
-iterations_switch = False
-long_request = False
+class btn_settings:
+    def __init__(self, state, label):
+        self.state = state
+        self.label = label
+
+    def btn_switch(self):
+        self.state = not self.state
+            
+        if self.state:
+            print(f"{self.label} ON")
+            return f"{self.label} ON"
+        else:
+            print(f"{self.label} OFF")
+            return f"{self.label} OFF"
+
+iterations_switch = btn_settings(False, "Итерации")
+limit_tokens_switch = btn_settings(True, "Ограничение токенов")
+long_request_switch = btn_settings(False, "Длинный ответ")
 
 bot = telebot.TeleBot(tg_api)
 openrouter_client = OpenRouter(api_key=openrouter)
@@ -31,13 +46,13 @@ openrouter_client = OpenRouter(api_key=openrouter)
 async def deepseek_work(input_text_deepseek):
     try:
 # Модуль ограничения токенов
-        if limit_tokens_switch == True:
+        if limit_tokens_switch.state == True:
             lim_tok = 6000
         else:
             lim_tok = None
 
 # Модуль включения длинного ответа
-        if long_request == False:
+        if long_request_switch.state == False:
             prompt = "Кратно ответь на мой вопрос."
         else:
             prompt = "Развернуто ответь на мои вопросы."
@@ -62,13 +77,13 @@ async def deepseek_work(input_text_deepseek):
 async def gpt_work (input_text_gpt):
     try:
 # Модуль ограничения токенов
-        if limit_tokens_switch == True:
+        if limit_tokens_switch.state == True:
             lim_tok = 6000
         else:
             lim_tok = None
 
 # Модуль включения длинного ответа
-        if long_request == False:
+        if long_request_switch.state == False:
             prompt = "Кратно ответь на мой вопрос."
         else:
             prompt = "Развернуто ответь на мои вопросы."
@@ -84,7 +99,7 @@ async def gpt_work (input_text_gpt):
     
         clean_content =  response.choices[0].message.content
         print(f"\n Ответ gpt: {clean_content}")
-        #bot.send_message(chat_id=id_chat, text=f"Ответ GPT: {clean_content}")
+
         return clean_content
         
     except Exception as e:
@@ -98,7 +113,7 @@ client_gemini = genai.Client(api_key=api_gemini)
 async def gemini_work (input_text_gemini):
     try:
 # Модуль включения длинного ответа
-        if long_request == False:
+        if long_request_switch.state == False:
             prompt = "Кратно ответь на мой вопрос."
         else:
             prompt = "Развернуто ответь на мои вопросы."
@@ -113,7 +128,7 @@ async def gemini_work (input_text_gemini):
         
         clean_content = response.text
         print(f"\n Ответ gemini: {clean_content}")
-        #bot.send_message(chat_id=id_chat, text=f"Ответ Gemini: {clean_content}")
+
         return clean_content
     
     except Exception as e:
@@ -124,7 +139,7 @@ async def gemini_work (input_text_gemini):
 async def gemma_work (input_text_gemma):
     try:
 # Модуль включения длинного ответа
-        if long_request == False:
+        if long_request_switch.state == False:
             prompt = "Кратно ответь на мой вопрос."
         else:
             prompt = "Давай развернутый, полный ответ модели."
@@ -139,7 +154,7 @@ async def gemma_work (input_text_gemma):
         
         clean_content = response.text
         print(f"\n Ответ gemma: {clean_content}")
-        #bot.send_message(chat_id=id_chat, text=f"Ответ Gemma: {clean_content}")
+
         return clean_content
     
     except Exception as e:
@@ -167,7 +182,9 @@ async def module_1(request_user):
     bot.send_message(chat_id=id_chat, text=f"Модуль-1: 75%...")
     
     prompt = (
-        f"Твоя задача обобщить эти ответы не меняя их сути, если есть расхождения в ответах — прямо укажи на них и добавь на против ответа количество голосов за вариант. Если голос None то не учитывай его.\n"
+        f"Твоя задача обобщить эти ответы не меняя их сути, если есть расхождения в ответах — прямо укажи на них и добавь на против ответа количество голосов за вариант."
+        f"Если голос None то не учитывай его.\n"
+        f"Подсчитывай количество голосов за каждый из отдельных ответов, если они расходятся.\n"
         f"Ответ gemini: {res_gemini}\n"
         f"Ответ gpt: {res_gpt}\n"
         f"Ответ deepseek: {res_deepseek}"
@@ -186,7 +203,8 @@ async def module_2(request_user):
     bot.send_message(chat_id=id_chat, text=f"Модуль-2: 75%...")
 
     prompt = (
-        f"Твоя задача обобщить эти ответы не меняя их сути, если есть расхождения в ответах — прямо укажи на них и добавь на против ответа количество голосов за вариант. Если голос None то не учитывай его.\n"
+        f"Твоя задача обобщить эти ответы не меняя их сути, если есть расхождения в ответах — прямо укажи на них и добавь на против ответа количество голосов за вариант."
+        f"Если голос None то не учитывай его.\n"
         f"Подсчитывай количество голосов за каждый из отдельных ответов, если они расходятся.\n"
         f"Ответ gemini: {res_gemini}\n"
         f"Ответ deepseek: {res_deepseek}\n"
@@ -201,7 +219,7 @@ async def module_3(request_user):
     iterations_while = 0
     history_outputs = []
     while iterations_while < 3:
-        if iterations_switch == False:
+        if iterations_switch.state == False:
             iterations_while += 3
         response_gemma_1, response_gemma_2 = await asyncio.gather(
             module_1(request_user),
@@ -209,8 +227,13 @@ async def module_3(request_user):
         )
 
         prompt = (
-            f"Твоя задача подытожить эти ответы. Если есть расхождения в них, вынеси их отдельно. И суммируй голоса обоих вариантов."
+            f"Твоя задача подытожить эти ответы."
+            f"Если есть расхождения в них, вынеси их отдельно и суммируй голоса обоих вариантов."
             f"Подсчитывай количество голосов за каждый из отдельных ответов, если они расходятся.\n"
+            f"Примерный трафорет ответа(то что в скобках не учитывай, это для тебя):"
+            f"\nИтоговый ответ(если есть расхождения в ответе, то ответ не вносится в этот блок):..."
+            f"\nРасхождения в ответах:..."
+            f"\nКоличество голосов за представленный вариант ответа:..."
             f"Ответ 1: {response_gemma_1}\n"
             f"Ответ 2: {response_gemma_2}"
         )
@@ -220,7 +243,7 @@ async def module_3(request_user):
 
         history_outputs.append(f"*Итерация №{iterations_while}**\n{final_output}")
 #Модуль 4
-        if iterations_switch == True:
+        if iterations_switch.state == True:
             prompt_2 = (
                 f"Твоя задача из начальных вопросов достать только те(в полном их содержании), что есть в блоке расхождения в ответах."
                 f"Вопросы: {request_user}\n"
@@ -259,53 +282,23 @@ def callback_inline(call):
     bot.answer_callback_query(call.id)
     
     if call.data == 'button_1':
-        bot.send_message(call.message.chat.id, iterations())
+        bot.send_message(call.message.chat.id, iterations_switch.btn_switch())
+
     elif call.data == 'button_2':
-        bot.send_message(call.message.chat.id, token_switch())
+        bot.send_message(call.message.chat.id, limit_tokens_switch.btn_switch())
+
     elif call.data == 'button_3':
             bot.send_message(call.message.chat.id, info())
+
     elif call.data == 'button_4':
-                bot.send_message(call.message.chat.id, length_answer())      
+                bot.send_message(call.message.chat.id, long_request_switch.btn_switch())
 
 #функции кнопок:
-def iterations():
-    global iterations_switch
-    iterations_switch = not iterations_switch
-    
-    if iterations_switch:
-        print("Итерации ON")
-        return "Итерации ON"
-    else:
-        print("Итерации OFF")
-        return "Итерации OFF"
-
-def token_switch():
-    global limit_tokens_switch
-    limit_tokens_switch = not limit_tokens_switch
-    
-    if limit_tokens_switch:
-        print("Ограничение токенов ON")
-        return "Ограничение токенов ON"
-    else:
-        print("Ограничение токенов OFF")
-        return "Ограничение токенов OFF"
-
-def length_answer():
-    global long_request
-    long_request = not long_request
-    
-    if long_request:
-        print("Длинный ответ ON")
-        return "Длинный ответ ON"
-    else:
-        print("Длинный ответ OFF")
-        return "Длинный ответ OFF"
-
 def info():
     text = (
-        f"\n🥵Итерации - {iterations_switch}"
-        f"\n🔥Ограничение токенов - {limit_tokens_switch}"
-        f"\n📖Длинный ответ - {long_request} - Функция в beta версии!"
+        f"\n🥵Итерации - {iterations_switch.state}"
+        f"\n🔥Ограничение токенов - {limit_tokens_switch.state}"
+        f"\n📖Длинный ответ - {long_request_switch.state} - Функция в beta версии!"
         "\n-------------------"
         "\n--🥵Итерации это режим при котором Сиера делает 3 круга. Увеличивает охват на n%"
         "\n⚠️ Увеличивает кол-во используемых токенов в ⁓3 раза."
@@ -318,7 +311,7 @@ def info():
         "\n--📖Подробный/Краткий ответ это режим при котором модель начинает давать более развернутые ответы."
         "\n⚠️ Функция ни разу не тестировалась. Результат не предсказуем!"
         "\n-------------------"
-        "\n--❇️Sierra (0.6.2) это узкоспециализированный, продвинутый, безошибочный агент."
+        "\n--❇️Sierra (0.6.3) это узкоспециализированный, продвинутый, безошибочный агент."
         )
     return text
 
@@ -339,6 +332,6 @@ def echo_all(message):
         bot.send_message(chat_id=chat_id, text=f"Произошла ошибка: {e}")
 
 
-print("Sierra (0.6.2) запущена.")
-bot.send_message(chat_id=id_chat, text="Sierra (0.6.2) запущена.")
+print("Sierra (0.6.3) запущена.")
+bot.send_message(chat_id=id_chat, text="Sierra (0.6.3) запущена.")
 bot.infinity_polling()
