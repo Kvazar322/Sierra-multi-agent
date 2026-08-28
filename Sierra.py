@@ -6,6 +6,7 @@ import sys
 from openrouter import OpenRouter
 import asyncio
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import requests
 
 
 current_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -262,13 +263,15 @@ async def module_3(request_user):
 def btn_pull(message):
     markup = InlineKeyboardMarkup()
 
-    btn1 = InlineKeyboardButton(text=f'🥵Итерации ON/OFF', callback_data='button_1')
-    btn2 = InlineKeyboardButton(text=f'🔥Ограничение токенов ON/OFF', callback_data='button_2')
+    btn1 = InlineKeyboardButton(text='🥵Итерации ON/OFF', callback_data='button_1')
+    btn2 = InlineKeyboardButton(text='🔥Ограничение токенов ON/OFF', callback_data='button_2')
     btn3 = InlineKeyboardButton(text='‼️Информация', callback_data='button_3')
     btn4 = InlineKeyboardButton(text='📖Подробный/Краткий ответ', callback_data='button_4')
+    btn5 = InlineKeyboardButton(text='Ping servers', callback_data='button_5')
 
     markup.add(btn1, btn2)
     markup.add(btn4)
+    markup.add(btn5)
     markup.add(btn3)
 
     bot.send_message(
@@ -288,10 +291,13 @@ def callback_inline(call):
         bot.send_message(call.message.chat.id, limit_tokens_switch.btn_switch())
 
     elif call.data == 'button_3':
-            bot.send_message(call.message.chat.id, info())
+        bot.send_message(call.message.chat.id, info())
 
     elif call.data == 'button_4':
-                bot.send_message(call.message.chat.id, long_request_switch.btn_switch())
+        bot.send_message(call.message.chat.id, long_request_switch.btn_switch())
+
+    elif call.data == 'button_5':
+        ping_servers()
 
 #функции кнопок:
 def info():
@@ -311,9 +317,28 @@ def info():
         "\n--📖Подробный/Краткий ответ это режим при котором модель начинает давать более развернутые ответы."
         "\n⚠️ Функция ни разу не тестировалась. Результат не предсказуем!"
         "\n-------------------"
-        "\n--❇️Sierra (0.6.3) это узкоспециализированный, продвинутый, безошибочный агент."
+        "\n--❇️Sierra (0.7.0) это узкоспециализированный, продвинутый, безошибочный агент."
         )
     return text
+
+def ping_servers():
+    urls = ["https://web.telegram.org","https://openrouter.ai","https://aistudio.google.com"]
+
+    for url in urls:
+        try:
+            req = requests.get(url)
+
+        except Exception as e:
+            print(f"Ошибка выполнения: {e}")
+            bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения: {e}")
+
+        if req.status_code == 200:
+            print(f"{url} - Статус: {req.status_code} - OK 🟢")
+            bot.send_message(chat_id=id_chat, text=f"{url} - Статус: {req.status_code} - OK 🟢")
+        
+        else:
+            print(f"{url} - Статус: {req.status_code} - Ошибка 🔴")
+            bot.send_message(chat_id=id_chat, text=f"{url} - Статус: {req.status_code} - Ошибка 🔴")
 
 #Принятие сообщений
 @bot.message_handler(func=lambda message: True)
@@ -332,6 +357,6 @@ def echo_all(message):
         bot.send_message(chat_id=chat_id, text=f"Произошла ошибка: {e}")
 
 
-print("Sierra (0.6.3) запущена.")
-bot.send_message(chat_id=id_chat, text="Sierra (0.6.3) запущена.")
+print("Sierra (0.7.0) запущена.")
+bot.send_message(chat_id=id_chat, text="Sierra (0.7.0) запущена.")
 bot.infinity_polling()
