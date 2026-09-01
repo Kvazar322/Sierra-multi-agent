@@ -6,7 +6,7 @@ import sys
 from openrouter import OpenRouter
 import asyncio
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-import requests
+import httpx
 
 
 current_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -39,14 +39,8 @@ iterations_switch = btn_settings(False, "Итерации")
 limit_tokens_switch = btn_settings(True, "Ограничение токенов")
 long_request_switch = btn_settings(False, "Длинный ответ")
 
-bot = telebot.TeleBot(tg_api)
-openrouter_client = OpenRouter(api_key=openrouter)
-
-
-# Ответ deepseek
-async def deepseek_work(input_text_deepseek):
-    try:
-# Модуль ограничения токенов
+def get_params():
+    # Модуль ограничения токенов
         if limit_tokens_switch.state == True:
             lim_tok = 6000
         else:
@@ -54,9 +48,20 @@ async def deepseek_work(input_text_deepseek):
 
 # Модуль включения длинного ответа
         if long_request_switch.state == False:
-            prompt = "Кратно ответь на мой вопрос."
+            prompt = "Кратко ответь на мой вопрос."
         else:
             prompt = "Развернуто ответь на мои вопросы."
+
+        return lim_tok, prompt
+
+bot = telebot.TeleBot(tg_api)
+openrouter_client = OpenRouter(api_key=openrouter)
+
+
+# Ответ deepseek
+async def deepseek_work(input_text_deepseek):
+    try:
+        lim_tok, prompt = get_params()
 
         response = await openrouter_client.chat.send_async(
             model="deepseek/deepseek-v4-flash",#deepseek/deepseek-r1
@@ -71,23 +76,14 @@ async def deepseek_work(input_text_deepseek):
         return clean_content
         
     except Exception as e:
-            print(f"Ошибка выполнения deepseek-v4-flash: {e}")
-            bot.send_message (chat_id=id_chat, text=f"Ошибка выполнения deepseek-v4-flash: {e}")
-            return None
+        print(f"Ошибка выполнения deepseek-v4-flash: {e}")
+        bot.send_message (chat_id=id_chat, text=f"Ошибка выполнения deepseek-v4-flash: {e}")
+        return None
+    
 # Ответ hy3
 async def gpt_work (input_text_gpt):
     try:
-# Модуль ограничения токенов
-        if limit_tokens_switch.state == True:
-            lim_tok = 6000
-        else:
-            lim_tok = None
-
-# Модуль включения длинного ответа
-        if long_request_switch.state == False:
-            prompt = "Кратно ответь на мой вопрос."
-        else:
-            prompt = "Развернуто ответь на мои вопросы."
+        lim_tok, prompt = get_params()
 
         response = await openrouter_client.chat.send_async(
             model="tencent/hy3",#openai/gpt-4o-mini-2024-07-18
@@ -104,20 +100,16 @@ async def gpt_work (input_text_gpt):
         return clean_content
         
     except Exception as e:
-                print(f"Ошибка выполнения hy3: {e}")
-                bot.send_message (chat_id=id_chat, text=f"Ошибка выполнения hy3: {e}")
-                return None
+        print(f"Ошибка выполнения hy3: {e}")
+        bot.send_message (chat_id=id_chat, text=f"Ошибка выполнения hy3: {e}")
+        return None
     
 # Ответ гемени
 client_gemini = genai.Client(api_key=api_gemini)
 
 async def gemini_work (input_text_gemini):
     try:
-# Модуль включения длинного ответа
-        if long_request_switch.state == False:
-            prompt = "Кратно ответь на мой вопрос."
-        else:
-            prompt = "Развернуто ответь на мои вопросы."
+        lim_tok, prompt = get_params()
 
         response = await client_gemini.aio.models.generate_content(
             model="gemini-3.6-flash",
@@ -133,17 +125,14 @@ async def gemini_work (input_text_gemini):
         return clean_content
     
     except Exception as e:
-                print(f"Ошибка выполнения gemini-3.6-flash: {e}")
-                bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения gemini-3.6-flash: {e}")
+        print(f"Ошибка выполнения gemini-3.6-flash: {e}")
+        bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения gemini-3.6-flash: {e}")
+        return None
 
 #Ответ Gemma
 async def gemma_work (input_text_gemma):
     try:
-# Модуль включения длинного ответа
-        if long_request_switch.state == False:
-            prompt = "Кратно ответь на мой вопрос."
-        else:
-            prompt = "Давай развернутый, полный ответ модели."
+        lim_tok, prompt = get_params()
 
         response = await client_gemini.aio.models.generate_content(
             model="gemma-4-31b-it",
@@ -159,8 +148,9 @@ async def gemma_work (input_text_gemma):
         return clean_content
     
     except Exception as e:
-            print(f"Ошибка выполнения gemma-4-31b-it: {e}")
-            bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения gemma-4-31b-it: {e}")
+        print(f"Ошибка выполнения gemma-4-31b-it: {e}")
+        bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения gemma-4-31b-it: {e}")
+        return None
 
 
 #Модуль 1
@@ -297,7 +287,7 @@ def callback_inline(call):
         bot.send_message(call.message.chat.id, long_request_switch.btn_switch())
 
     elif call.data == 'button_5':
-        ping_servers()
+        asyncio.run(ping_servers())
 
 #функции кнопок:
 def info():
@@ -321,29 +311,31 @@ def info():
         )
     return text
 
-def ping_servers():
+async def ping_servers():
     urls = ["https://web.telegram.org","https://openrouter.ai","https://aistudio.google.com"]
 
-    for url in urls:
-        try:
-            req = requests.get(url)
+    async with httpx.AsyncClient() as client:
+        for url in urls:
+            try:
+                req = await client.get(url, timeout=5)
 
-        except Exception as e:
-            print(f"Ошибка выполнения: {e}")
-            bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения: {e}")
+                if req.status_code == 200:
+                    print(f"{url} - Статус: {req.status_code} - OK 🟢")
+                    bot.send_message(chat_id=id_chat, disable_web_page_preview=True, text=f"{url} - Статус: {req.status_code} - OK 🟢")
+                
+                else:
+                    print(f"{url} - Статус: {req.status_code} - Ошибка 🔴")
+                    bot.send_message(chat_id=id_chat, disable_web_page_preview=True, text=f"{url} - Статус: {req.status_code} - Ошибка 🔴")
 
-        if req.status_code == 200:
-            print(f"{url} - Статус: {req.status_code} - OK 🟢")
-            bot.send_message(chat_id=id_chat, text=f"{url} - Статус: {req.status_code} - OK 🟢")
-        
-        else:
-            print(f"{url} - Статус: {req.status_code} - Ошибка 🔴")
-            bot.send_message(chat_id=id_chat, text=f"{url} - Статус: {req.status_code} - Ошибка 🔴")
+            except Exception as e:
+                print(f"Ошибка выполнения: {e}")
+                bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения: {e}")
 
 #Принятие сообщений
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
     request_user = message.text
+    print(request_user)
     chat_id = message.chat.id
     
     bot.send_message(chat_id=chat_id, text="Запрос принят в обработку...")
