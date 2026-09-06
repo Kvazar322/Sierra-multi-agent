@@ -7,6 +7,7 @@ from openrouter import OpenRouter
 import asyncio
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import httpx
+from google.genai import types
 
 
 current_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -19,6 +20,9 @@ api_gemini = config["api_gemini"]
 tg_api = config["tg_api"]
 id_chat = config["id_chat"]
 openrouter = config["openrouter"]
+
+bot = telebot.TeleBot(tg_api)
+openrouter_client = OpenRouter(api_key=openrouter)
 
 class btn_settings:
     def __init__(self, state, label):
@@ -53,10 +57,6 @@ def get_params():
             prompt = "Развернуто ответь на мои вопросы."
 
         return lim_tok, prompt
-
-bot = telebot.TeleBot(tg_api)
-openrouter_client = OpenRouter(api_key=openrouter)
-
 
 # Ответ deepseek
 async def deepseek_work(input_text_deepseek):
@@ -150,6 +150,34 @@ async def gemma_work (input_text_gemma):
     except Exception as e:
         print(f"Ошибка выполнения gemma-4-31b-it: {e}")
         bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения gemma-4-31b-it: {e}")
+        return None
+
+#Ответ gemini(osr)
+async def osr_work (input_text_osr):
+
+    try:
+        response = await client_gemini.aio.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=[
+                "Что изображено на фотографии?",
+                types.Part.from_bytes(
+                    data=input_text_osr,
+                    mime_type="image/jpeg"
+                )
+            ],
+            config={
+            "system_instruction": "Тебе дано фото. Твоя задача достать текст из фото для последующей текстовой модели."
+            }
+        )
+        
+        clean_content = response.text
+        print(f"\n Ответ gemini: {clean_content}")
+
+        return clean_content
+    
+    except Exception as e:
+        print(f"Ошибка выполнения gemini-3.5-flash-lite: {e}")
+        bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения gemini-3.5-flash-lite: {e}")
         return None
 
 
@@ -307,7 +335,11 @@ def info():
         "\n--📖Подробный/Краткий ответ это режим при котором модель начинает давать более развернутые ответы."
         "\n⚠️ Функция ни разу не тестировалась. Результат не предсказуем!"
         "\n-------------------"
-        "\n--❇️Sierra (0.7.0) это узкоспециализированный, продвинутый, безошибочный агент."
+        "\n--👀 OSR даёт возможность распозновать текст с фото."
+        "\n⚠️ При использовании фото писать ничего нельзя вместе с фото!"
+        "\n⚠️ Функция ни разу не тестировалась. Результат не предсказуем!"
+        "\n-------------------"
+        "\n--❇️Sierra (0.8.0) это узкоспециализированный, продвинутый, безошибочный агент."
         )
     return text
 
@@ -331,12 +363,13 @@ async def ping_servers():
                 print(f"Ошибка выполнения: {e}")
                 bot.send_message(chat_id=id_chat, text=f"Ошибка выполнения: {e}")
 
-#Принятие сообщений
+#Принятие сообщений(текст)
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
+    chat_id = message.chat.id
+
     request_user = message.text
     print(request_user)
-    chat_id = message.chat.id
     
     bot.send_message(chat_id=chat_id, text="Запрос принят в обработку...")
     
@@ -348,7 +381,35 @@ def echo_all(message):
         print(f"Ошибка выполнения: {e}")
         bot.send_message(chat_id=chat_id, text=f"Произошла ошибка: {e}")
 
+#Принятие сообщений(фото)
+@bot.message_handler(content_types=['photo'])
+def handle_photo(message):
+    chat_id = message.chat.id
 
-print("Sierra (0.7.0) запущена.")
-bot.send_message(chat_id=id_chat, text="Sierra (0.7.0) запущена.")
+    try:
+        photo = message.photo[-1]
+        file_info = bot.get_file(photo.file_id)
+        file_bytes = bot.download_file(file_info.file_path)
+
+        bot.send_message(chat_id=chat_id, text="Запрос(фото) принят в обработку...")
+
+    except Exception as e:
+        print(f"Ошибка выполнения: {e}")
+        bot.send_message(chat_id=chat_id, text=f"Произошла ошибка: {e}")
+
+
+    try:
+        out_text = asyncio.run(osr_work(file_bytes))
+        print(f"Текст с фото: {out_text}")
+
+        final_answer = asyncio.run(module_3(out_text))
+        bot.send_message(chat_id=chat_id, text=final_answer)
+
+    except Exception as e:
+        print(f"Ошибка выполнения: {e}")
+        bot.send_message(chat_id=chat_id, text=f"Произошла ошибка: {e}")
+
+
+print("Sierra (0.8.0) запущена.")
+bot.send_message(chat_id=id_chat, text="Sierra (0.8.0) запущена.")
 bot.infinity_polling()
