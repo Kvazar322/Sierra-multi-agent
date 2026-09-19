@@ -12,11 +12,14 @@ A multi-agent Telegram bot engineered to eliminate Large Language Model (LLM) ha
 
 Evaluated on a custom benchmark dataset of 50 complex test questions designed to trigger model hallucinations.
 
-| Model / System | Ground Truth Accuracy | Question Coverage | Overall Error Rate |
-| :--- | :---: | :---: | :---: |
-| **Sierra 0.5.2** | **100%** | **76%** | **0%** |
-| Gemini | 74% | 100% | 26% |
-| GPT-4o | 66% | 100% | 34% |
+| Model / System | Question Coverage | Ground Truth Accuracy (Covered) | Precision | Top-1 Error Rate |
+| :--- | :---: | :---: | :---: | :---: |
+| **Sierra 0.5.2** | **76%** | **100%** | **0%** | **10%** |
+| Sierra 0.3.0 | 39% | 100% | 0% | 45% |
+| Gemini | 100% | 74% | 26% | 26% |
+| GPT-4o | 100% | 66% | 34% | 34% |
+
+Top-1 Error Rate measures the error rate when selecting the model's highest-probability answer without applying Sierra's filtering.
 
 ## Core Features
 
@@ -29,6 +32,9 @@ Evaluated on a custom benchmark dataset of 50 complex test questions designed to
 * **Detailed vs. Concise Response Strategy(Beta):** Dynamically instructs models to switch between brief summaries and deep-dive technical explanations.
 
 * **Interactive Control Panel:** Manage runtime flags (Iterations, Token Limits, Detailed Answers) directly via Telegram inline keyboards.
+
+* **OСR(Beta):** Allows you to recognize text directly from photos.
+  * **Warning:** When using the photo, do not write anything alongside it.
 
 ## Setup & Installation
 
