@@ -33,6 +33,8 @@ Top-1 Error Rate measures the error rate when selecting the model's highest-prob
 
 * **Interactive Control Panel:** Manage runtime flags (Iterations, Token Limits, Detailed Answers) directly via Telegram inline keyboards.
 
+* **Сhecks Servers:** Сhecks the availability of the servers being used.
+
 * **OСR(Beta):** Allows you to recognize text directly from photos.
   * **Warning:** When using the photo, do not write anything alongside it.
 

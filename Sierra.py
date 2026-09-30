@@ -21,6 +21,14 @@ tg_api = config["tg_api"]
 id_chat = config["id_chat"]
 openrouter = config["openrouter"]
 
+sample = ("""
+    ######   ######   #####   #####    #####      ###
+    ##         ##     ##      ##  ##   ##  ##    ## ##
+    ######     ##     #####   #####    #####    ##   ##
+        ##     ##     ##      ## ##    ## ##    #######
+    ######   ######   #####   ##  ##   ##  ##   ##   ##
+    """)
+
 bot = telebot.TeleBot(tg_api)
 openrouter_client = OpenRouter(api_key=openrouter)
 
@@ -261,7 +269,11 @@ async def module_3(request_user):
         final_output = await gemma_work(prompt)
         bot.send_message(chat_id=id_chat, text=f"Модуль-3...")
 
-        history_outputs.append(f"*Итерация №{iterations_while}**\n{final_output}")
+        if iterations_switch.state == False:
+            history_outputs.append(f"*Без итераций.**\n{final_output}")
+        else:
+            history_outputs.append(f"*Итерация №{iterations_while}**\n{final_output}")
+            
 #Модуль 4
         if iterations_switch.state == True:
             prompt_2 = (
@@ -286,7 +298,7 @@ def btn_pull(message):
     btn2 = InlineKeyboardButton(text='🔥Ограничение токенов ON/OFF', callback_data='button_2')
     btn3 = InlineKeyboardButton(text='‼️Информация', callback_data='button_3')
     btn4 = InlineKeyboardButton(text='📖Подробный/Краткий ответ', callback_data='button_4')
-    btn5 = InlineKeyboardButton(text='Ping servers', callback_data='button_5')
+    btn5 = InlineKeyboardButton(text='Сhecks servers', callback_data='button_5')
 
     markup.add(btn1, btn2)
     markup.add(btn4)
@@ -339,7 +351,7 @@ def info():
         "\n--👀 OСR(beta) даёт возможность распознавать текст с фото."
         "\n⚠️ При использовании фото писать ничего нельзя вместе с фото!"
         "\n-------------------"
-        "\n--❇️Sierra (0.8.1) это узкоспециализированный, продвинутый, безошибочный агент."
+        "\n--❇️Sierra (0.8.2) это узкоспециализированный, продвинутый, безошибочный агент."
         )
     return text
 
@@ -351,7 +363,7 @@ async def ping_servers():
             try:
                 req = await client.get(url, timeout=5)
 
-                if req.status_code == 200:
+                if req.status_code == 200 or req.status_code == 302:
                     print(f"{url} - Статус: {req.status_code} - OK 🟢")
                     bot.send_message(chat_id=id_chat, disable_web_page_preview=True, text=f"{url} - Статус: {req.status_code} - OK 🟢")
                 
@@ -410,6 +422,6 @@ def handle_photo(message):
         bot.send_message(chat_id=chat_id, text=f"Произошла ошибка: {e}")
 
 
-print("Sierra (0.8.1) запущена.")
-bot.send_message(chat_id=id_chat, text="Sierra (0.8.1) запущена.")
+print(f"""\033[36m{sample}\033[0m""")
+bot.send_message(chat_id=id_chat, text=f"""```{sample}```""", parse_mode='MarkdownV2')
 bot.infinity_polling()
